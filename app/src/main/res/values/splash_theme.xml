@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.PaMwezi.splash" parent="Theme.PaMwezi">
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/cash</item>
+        <item name="splashScreenIconSize">240dp</item>
+        <item name="postSplashScreenTheme">@style/Theme.PaMwezi</item>
+    </style>
+</resources>

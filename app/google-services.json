@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1034459560896",
+    "project_id": "pa-mwezi",
+    "storage_bucket": "pa-mwezi.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1034459560896:android:a3259cecdb95d9e12be625",
+        "android_client_info": {
+          "package_name": "com.devapps.pamwezi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1034459560896-lp69cbf1le4na5eresupsipsj9scblnl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKfXYbhp5baPUa0gExEfApcr43c9ESO0g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1034459560896-lp69cbf1le4na5eresupsipsj9scblnl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
