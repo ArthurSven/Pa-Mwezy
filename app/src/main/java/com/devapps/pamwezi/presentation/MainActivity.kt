@@ -27,6 +27,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -238,7 +239,7 @@ class MainActivity : ComponentActivity() {
                 containerColor = Color.White,
                 contentColor = Color.White,
                 topBar = {
-                    TopAppBar(
+                    CenterAlignedTopAppBar(
                         title = {
                             Text(
                                 text = "Pa Mwezy",
@@ -473,7 +474,7 @@ class MainActivity : ComponentActivity() {
                 containerColor = Color.White,
                 contentColor = Color.White,
                 topBar = {
-                    TopAppBar(
+                    CenterAlignedTopAppBar(
                         title = {
                             Text(
                                 text = "Pa Mwezy",
