@@ -14,14 +14,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "1034459560896-3c2d8jst40qp199eubpuom4jjrisrm2s.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.devapps.pamwezi",
-            "certificate_hash": "3377a9deaa00f6865e0b6d372d7bbb6ec00763de"
-          }
-        },
-        {
           "client_id": "1034459560896-lp69cbf1le4na5eresupsipsj9scblnl.apps.googleusercontent.com",
           "client_type": 3
         }
