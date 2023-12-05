@@ -117,6 +117,13 @@ dependencies {
     //Splashscreen
     implementation("androidx.core:core-splashscreen:1.0.0")
 
+    //Room dependency
+    implementation("androidx.room:room-runtime:2.5.2")
+    kapt("androidx.room:room-compiler:2.5.2")
+    implementation("androidx.room:room-ktx:2.5.2")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2")
+
 
 
 }
