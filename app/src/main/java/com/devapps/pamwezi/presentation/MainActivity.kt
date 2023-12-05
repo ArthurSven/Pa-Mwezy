@@ -70,6 +70,7 @@ import androidx.navigation.compose.rememberNavController
 import com.devapps.pamwezi.R
 import com.devapps.pamwezi.domain.repository.GoogleAuthClient
 import com.devapps.pamwezi.presentation.theme.PaMweziTheme
+import com.devapps.pamwezi.presentation.ui.Screens.Home
 import com.devapps.pamwezi.presentation.ui.Screens.HomeScreen
 import com.devapps.pamwezi.presentation.viewmodels.AuthViewModel
 import com.devapps.pamwezi.presentation.viewmodels.SplashViewModel
@@ -200,7 +201,7 @@ class MainActivity : ComponentActivity() {
                     if (googleAuthClient.getSignedInUser() != null) {
                         if (state.isSignInSuccessful) {
                         }
-                        landingNavController.navigate(route = "home_screen")
+                        landingNavController.navigate(Home.route)
                     } else {
                         landingNavController.navigate(route = "landing_screen")
                     }
@@ -213,7 +214,7 @@ class MainActivity : ComponentActivity() {
                             "Sign in Successful",
                             Toast.LENGTH_LONG
                         ).show()
-                        landingNavController.navigate("home_screen")
+                        landingNavController.navigate(Home.route)
                         authViewModel.resetState()
                     }
                 }
@@ -223,8 +224,7 @@ class MainActivity : ComponentActivity() {
                 LandingPage()
             }
 
-            composable(route = "home_screen") {
-
+            composable(Home.route) {
                 HomeScreen(
                     userData = googleAuthClient.getSignedInUser(),
                     onSignOut = {
