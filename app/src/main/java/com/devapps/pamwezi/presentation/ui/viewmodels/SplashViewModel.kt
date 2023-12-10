@@ -1,4 +1,4 @@
-package com.devapps.pamwezi.presentation.viewmodels
+package com.devapps.pamwezi.presentation.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

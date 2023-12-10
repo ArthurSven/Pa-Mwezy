@@ -4,16 +4,16 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "monthly_budget")
-data class Budget(
+@Entity(tableName = "budget_table")
+data class BudgetLocal(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    @ColumnInfo(name = "budget_title")
+    @ColumnInfo("budget_title")
     val title: String,
-    @ColumnInfo(name = "budget_amount")
-    val amount: Int,
-    @ColumnInfo(name = "month")
+    @ColumnInfo("budget_amount")
+    val amount: Double,
+    @ColumnInfo("month")
     val month: String,
-    @ColumnInfo(name = "created_by")
+    @ColumnInfo("createdBy")
     val createdBy: String
 )

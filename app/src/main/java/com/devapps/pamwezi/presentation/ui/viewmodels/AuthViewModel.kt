@@ -1,4 +1,4 @@
-package com.devapps.pamwezi.presentation.viewmodels
+package com.devapps.pamwezi.presentation.ui.viewmodels
 
 import android.content.Context
 import androidx.lifecycle.LiveData

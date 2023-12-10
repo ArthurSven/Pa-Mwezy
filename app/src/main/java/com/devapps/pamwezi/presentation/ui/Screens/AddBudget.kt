@@ -1,5 +1,7 @@
 package com.devapps.pamwezi.presentation.ui.Screens
 
+import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -16,6 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
@@ -34,6 +39,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,21 +49,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.devapps.pamwezi.domain.model.BudgetLocal
 import com.devapps.pamwezi.domain.model.UserData
 import com.devapps.pamwezi.domain.repository.GoogleAuthClient
 import com.devapps.pamwezi.presentation.ui.Components.UserBar
-import com.devapps.pamwezi.presentation.viewmodels.AuthViewModel
+import com.devapps.pamwezi.presentation.ui.viewmodels.AuthViewModel
+import com.devapps.pamwezi.presentation.ui.viewmodels.BudgetViewModel
 import com.google.android.gms.auth.api.identity.Identity
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,6 +131,7 @@ fun AddBudgetScreen(
     onSignOut: () -> Unit,
     navController: NavController
 ) {
+
     val showMenu = remember { mutableStateOf(false) }
     Scaffold(
         containerColor = Color.White,
@@ -181,18 +198,21 @@ fun AddBudgetScreen(
             UserBar(userData)
             Spacer(modifier = Modifier
                 .height(40.dp))
-            BudgetCard(userData)
+            BudgetCard()
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BudgetCard(userData: UserData?) {
+fun BudgetCard() {
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val authViewModel = viewModel<AuthViewModel>()
+    val budgetViewModel: BudgetViewModel = hiltViewModel()
+
+    val state by budgetViewModel.state.collectAsState()
 
     val googleAuthClient by lazy {
         GoogleAuthClient(
@@ -201,9 +221,10 @@ fun BudgetCard(userData: UserData?) {
         )
     }
 
-    val username = userData?.username.toString()
 
-    val months = arrayOf(
+    val username = googleAuthClient.getSignedInUser()?.username.toString()
+
+    val months = arrayOf<String>(
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     )
@@ -211,16 +232,18 @@ fun BudgetCard(userData: UserData?) {
     var selectedMonth = remember { mutableStateOf(months[0]) }
     val expanded = remember { mutableStateOf(false) }
 
+    val month = selectedMonth.value
+
     var budgetTitle by remember {
         mutableStateOf("")
     }
 
     var monthlyBudget by remember {
-        mutableStateOf("Budget amount")
+        mutableStateOf(0.0)
     }
 
     var monthAdded by remember {
-        mutableStateOf("")
+        mutableStateOf(month)
     }
 
     var createdBy by remember {
@@ -268,13 +291,19 @@ fun BudgetCard(userData: UserData?) {
                     budgetTitle = it
                 },
                 placeholder = {
-                    Text(text = "Budget title",
-                        color = Color.Black)
+                    Text(
+                        text = "Budget title",
+                        color = Color.Black
+                    )
                 },
-                keyboardOptions = KeyboardOptions.Default,
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
                 modifier = Modifier
                     .padding(start = 20.dp, end = 20.dp)
-                    .border(width = 2.dp, color = Color.LightGray),
+                    .border(width = 2.dp, color = Color.LightGray)
+                    .background(color = Color.LightGray),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     textColor = Color.Black,
                     unfocusedBorderColor = Color.Gray,
@@ -286,18 +315,24 @@ fun BudgetCard(userData: UserData?) {
                     .height(15.dp)
             )
             OutlinedTextField(
-                value = monthlyBudget,
+                value = monthlyBudget.toString(),
                 onValueChange = {
-                    monthlyBudget = it
+                    monthlyBudget = it.toDoubleOrNull() ?: 0.0
                 },
                 placeholder = {
-                    Text(text = "Budget amount",
-                        color = Color.Black)
+                    Text(
+                        text = "Budget amount",
+                        color = Color.Black
+                    )
                 },
-                keyboardOptions = KeyboardOptions.Default,
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Next
+                ),
                 modifier = Modifier
                     .padding(start = 20.dp, end = 20.dp)
-                    .border(width = 2.dp, color = Color.LightGray),
+                    .border(width = 2.dp, color = Color.LightGray)
+                    .background(color = Color.LightGray),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     textColor = Color.Black,
                     unfocusedBorderColor = Color.Gray,
@@ -311,27 +346,42 @@ fun BudgetCard(userData: UserData?) {
             Box(
                 modifier = Modifier
                     .padding(start = 20.dp, end = 20.dp)
+                    .fillMaxWidth()
                     .background(color = Color.White)
             ) {
+
                 ExposedDropdownMenuBox(
                     expanded = expanded.value,
                     onExpandedChange = {
                         expanded.value = !expanded.value
-                    }) {
+                    },
+                    modifier = Modifier
+                        .background(color = Color.White)
+                        .fillMaxWidth(),
+                ) {
                     TextField(
                         value = selectedMonth.value,
                         onValueChange = {
                             selectedMonth.value = it
                         },
-                        modifier = Modifier.menuAnchor()
+                        modifier = Modifier
+                            .menuAnchor()
+                            .background(color = Color.White)
                     )
                     ExposedDropdownMenu(
                         expanded = expanded.value,
-                        onDismissRequest = { expanded.value = false }
+                        onDismissRequest = { expanded.value = false },
+                        modifier = Modifier
+                            .background(color = Color.White)
                     ) {
                         months.forEach {
                             DropdownMenuItem(
-                                text = { Text(text = it) },
+                                text = {
+                                    Text(
+                                        text = it,
+                                        color = Color.Black
+                                    )
+                                },
                                 onClick = {
                                     selectedMonth.value = it
                                     expanded.value = false
@@ -342,8 +392,69 @@ fun BudgetCard(userData: UserData?) {
             }
             Spacer(
                 modifier = Modifier
-                    .height(10.dp)
+                    .height(20.dp)
             )
+            Button(
+
+
+                onClick = {
+                    if (budgetTitle.isNotEmpty() && monthlyBudget.toString().isNotEmpty()) {
+                        val budgetLocal = BudgetLocal(
+                            title = budgetTitle,
+                            amount = monthlyBudget,
+                            month = monthAdded,
+                            createdBy = createdBy
+                        )
+
+                        coroutineScope.launch {
+                            budgetViewModel.insertBudget(budgetLocal)
+                        }
+                        budgetTitle = ""
+                        monthlyBudget = 0.0
+                        selectedMonth =  mutableStateOf(months[0])
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Ensure that the title is not empty",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+
+                    // Call insertBudget in the ViewModel
+                    coroutineScope.launch {
+
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Black,
+                    contentColor = Color.White
+                ),
+                modifier = Modifier
+                    .padding(start = 20.dp, end = 20.dp)
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .background(color = Color.White),
+                shape = RoundedCornerShape(5.dp)
+            ) {
+                Text(text = "Create Budget")
+            }
+            Spacer(
+                modifier = Modifier
+                    .height(30.dp)
+            )
+            LaunchedEffect(key1 = state.isInsertedBudgetSuccessful) {
+                if (state.isInsertedBudgetSuccessful) {
+                    Toast.makeText(
+                        context,
+                        "Budget successfully added",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    budgetViewModel.resetState()
+                }
+            }
         }
+
     }
 }
+

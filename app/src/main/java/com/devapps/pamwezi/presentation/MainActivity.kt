@@ -72,11 +72,13 @@ import com.devapps.pamwezi.domain.repository.GoogleAuthClient
 import com.devapps.pamwezi.presentation.theme.PaMweziTheme
 import com.devapps.pamwezi.presentation.ui.Screens.Home
 import com.devapps.pamwezi.presentation.ui.Screens.HomeScreen
-import com.devapps.pamwezi.presentation.viewmodels.AuthViewModel
-import com.devapps.pamwezi.presentation.viewmodels.SplashViewModel
+import com.devapps.pamwezi.presentation.ui.viewmodels.AuthViewModel
+import com.devapps.pamwezi.presentation.ui.viewmodels.SplashViewModel
 import com.google.android.gms.auth.api.identity.Identity
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
 

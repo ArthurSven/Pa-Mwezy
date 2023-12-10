@@ -4,24 +4,28 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import androidx.room.Index
 
-@Entity( tableName = "expense_table",
+
+@Entity(tableName = "budget_expense",
     foreignKeys = [
-            ForeignKey(
-                entity = Budget::class,
-                parentColumns = ["id"],
-                childColumns = ["budget_id"]
-            )
-    ])
+    ForeignKey(
+        entity = BudgetLocal::class,
+        parentColumns = ["id"],
+        childColumns = ["budget_id"]
+    )
+],
+    indices = [Index("budget_id")]
+)
 data class Expense(
     @PrimaryKey(autoGenerate = true)
     val expenseId: Int = 0,
-    @ColumnInfo("expense_name")
-    val expenseName: String,
-    @ColumnInfo("price")
-    val price: Double,
+    @ColumnInfo("expense_title")
+    val expenseTitle: String,
     @ColumnInfo("quantity")
     val qty: Int,
+    @ColumnInfo("price")
+    val price: Double,
     @ColumnInfo("budget_id")
-    val budget: Budget
+    val id: Int
 )
