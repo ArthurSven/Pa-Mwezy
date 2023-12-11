@@ -4,6 +4,13 @@ interface Destinations {
     val route: String
 }
 
+object SplashScreen : Destinations {
+    override val route: String = "splash_screen"
+}
+
+object LandingPage : Destinations {
+    override val route: String = "landing_screen"
+}
 object Home : Destinations {
     override val route: String = "home_screen"
 }

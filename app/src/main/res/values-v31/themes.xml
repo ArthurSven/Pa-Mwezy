@@ -3,6 +3,7 @@
 
     <style name="Theme.PaMwezi" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:background">#FFFFFF</item>
         <item name="android:splashScreenTheme">@style/Theme.PaMwezi.splash</item>
     </style>
 </resources>

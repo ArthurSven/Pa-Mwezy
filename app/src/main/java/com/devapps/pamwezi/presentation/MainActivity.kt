@@ -1,6 +1,7 @@
 package com.devapps.pamwezi.presentation
 
 import android.os.Bundle
+import android.view.animation.OvershootInterpolator
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -8,11 +9,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,31 +27,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,8 +42,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,6 +49,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.Navigation
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -72,26 +58,19 @@ import com.devapps.pamwezi.domain.repository.GoogleAuthClient
 import com.devapps.pamwezi.presentation.theme.PaMweziTheme
 import com.devapps.pamwezi.presentation.ui.Screens.Home
 import com.devapps.pamwezi.presentation.ui.Screens.HomeScreen
+import com.devapps.pamwezi.presentation.ui.Screens.LandingPage
+import com.devapps.pamwezi.presentation.ui.Screens.SplashScreen
 import com.devapps.pamwezi.presentation.ui.viewmodels.AuthViewModel
 import com.devapps.pamwezi.presentation.ui.viewmodels.SplashViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-
-    private val splashViewModel: SplashViewModel by viewModels()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        installSplashScreen().apply {
-            setKeepOnScreenCondition {
-                splashViewModel.isLoading.value
-            }
-        }
-
         setContent {
             PaMweziTheme {
                 // A surface container using the 'background' color from the theme
@@ -99,15 +78,108 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.White
                 ) {
-                    LandingPage()
+                    Navigation()
                 }
             }
         }
     }
 
+    @Composable
+    fun Navigation() {
+        val context = LocalContext.current.applicationContext
+        val coroutineScope = rememberCoroutineScope()
+        val authViewModel = viewModel<AuthViewModel>()
+        val state by authViewModel.state.collectAsStateWithLifecycle()
+
+        val googleAuthClient by lazy {
+            GoogleAuthClient(
+                context = context,
+                oneTapClient = Identity.getSignInClient(context)
+            )
+        }
+
+        val landingNavController = rememberNavController()
+        NavHost(navController = landingNavController, startDestination = SplashScreen.route) {
+            composable(SplashScreen.route) {
+                SplashScreen(navController = landingNavController)
+
+            }
+            composable(route = "start_screen") {
+                /*
+                Checks if the user was signed in or not,
+                if the user was prev signed in it will navigate to home page,
+                if user was not logged in, it leads to login page
+                */
+                LaunchedEffect(key1 = Unit) {
+                    if (googleAuthClient.getSignedInUser() != null) {
+                        if (state.isSignInSuccessful) {
+                        }
+                        landingNavController.navigate(Home.route)
+                    } else {
+                        landingNavController.navigate(route = "landing_screen")
+                    }
+                }
+            }
+
+            composable(route = "landing_screen") {
+                LandingPage(landingNavController)
+            }
+
+            composable(Home.route) {
+                HomeScreen(
+                    userData = googleAuthClient.getSignedInUser(),
+                    onSignOut = {
+                        coroutineScope . launch {
+                            googleAuthClient.signOut()
+                            Toast.makeText(
+                                context,
+                                "Signed out",
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            landingNavController.popBackStack()
+                        }
+                    }
+                )
+            }
+        }
+    }
 
     @Composable
-    fun LandingPage() {
+    fun SplashScreen(navController: NavController) {
+        val scale = remember {
+            Animatable(0f)
+        }
+        LaunchedEffect(key1 = true) {
+            scale.animateTo(
+                targetValue = 0.3f,
+                animationSpec = tween(
+                    durationMillis = 500,
+                    easing = {
+                        OvershootInterpolator(2f).getInterpolation(it)
+                    }
+                )
+            )
+            delay(3000)
+            navController.navigate("start_screen")
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center) {
+            val imageModifier = Modifier
+                .size(150.dp)
+            Image(
+                painterResource(id = R.drawable.pa_mwezy),
+                contentDescription = null,
+                modifier = imageModifier
+            )
+        }
+    }
+
+
+    @Composable
+    fun LandingPage(navController: NavController) {
         val context = LocalContext.current.applicationContext
         val coroutineScope = rememberCoroutineScope()
         val authViewModel = viewModel<AuthViewModel>()
@@ -188,62 +260,20 @@ class MainActivity : ComponentActivity() {
                 color = Color.Black,
                 text = "Sign in with Google", iconResId = R.drawable.google_black
             )
-
-        }
-
-        val landingNavController = rememberNavController()
-        NavHost(navController = landingNavController, startDestination = "start_screen") {
-            composable(route = "start_screen") {
-                /*
-                Checks if the user was signed in or not,
-                if the user was prev signed in it will navigate to home page,
-                if user was not logged in, it leads to login page
-                */
-                LaunchedEffect(key1 = Unit) {
-                    if (googleAuthClient.getSignedInUser() != null) {
-                        if (state.isSignInSuccessful) {
-                        }
-                        landingNavController.navigate(Home.route)
-                    } else {
-                        landingNavController.navigate(route = "landing_screen")
-                    }
-                }
-
-                LaunchedEffect(key1 = state.isSignInSuccessful) {
-                    if (state.isSignInSuccessful) {
-                        Toast.makeText(
-                            context,
-                            "Sign in Successful",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        landingNavController.navigate(Home.route)
-                        authViewModel.resetState()
-                    }
+            LaunchedEffect(key1 = state.isSignInSuccessful) {
+                if (state.isSignInSuccessful) {
+                    Toast.makeText(
+                        context,
+                        "Sign in Successful",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    navController.navigate(Home.route)
+                    authViewModel.resetState()
                 }
             }
 
-            composable(route = "landing_screen") {
-                LandingPage()
-            }
-
-            composable(Home.route) {
-                HomeScreen(
-                    userData = googleAuthClient.getSignedInUser(),
-                    onSignOut = {
-                         coroutineScope . launch {
-                            googleAuthClient.signOut()
-                            Toast.makeText(
-                                context,
-                                "Signed out",
-                                Toast.LENGTH_LONG
-                            ).show()
-
-                            landingNavController.popBackStack()
-                        }
-                    }
-                )
-            }
         }
+
     }
 
     @Composable
@@ -297,7 +327,6 @@ class MainActivity : ComponentActivity() {
     @Preview(showBackground = true)
     @Composable
     fun GreetingPreview() {
-        LandingPage()
     }
 }
 
