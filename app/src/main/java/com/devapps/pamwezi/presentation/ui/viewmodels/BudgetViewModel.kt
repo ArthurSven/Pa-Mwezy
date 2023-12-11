@@ -46,6 +46,10 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
     private val _createdBy = MutableStateFlow<String>("")
     val createdBy: StateFlow<String> = _createdBy
 
+    // MutableState to track delete operation result
+    private val _isDeleteSuccessful = MutableStateFlow(false)
+    val isDeleteSuccessful: StateFlow<Boolean> = _isDeleteSuccessful.asStateFlow()
+
     fun setCreatedBy(username: String) {
         _createdBy.value = username
         getAllBudgetsByUser()
@@ -56,6 +60,16 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
             budgetRepository.getAllBudgetsByUser(_createdBy.value).collect { budgets ->
                 _userBudgets.value = budgets
             }
+        }
+    }
+
+    suspend fun deleteBudget(budgetLocal: BudgetLocal) {
+        try {
+            budgetRepository.deleteBudget(budgetLocal)
+            _isDeleteSuccessful.value = true // Set to true on successful deletion
+        } catch (e: Exception) {
+            _isDeleteSuccessful.value = false // Set to false on deletion failure
+            // Handle the exception if needed
         }
     }
 
@@ -84,6 +98,11 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
 
     fun resetState() {
         _state.update { InsertBudgetState() }
+    }
+
+    // Function to reset isDeleteSuccessful state
+    fun resetDeleteSuccessState() {
+        _isDeleteSuccessful.value = false
     }
 }
 

@@ -1,7 +1,10 @@
 package com.devapps.pamwezi.presentation.ui.Screens
 
+import android.app.AlertDialog
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -30,9 +34,11 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -194,7 +201,7 @@ fun HomeContent(
                     .height(20.dp))
                 UserBar(userData)
                 Spacer(modifier = Modifier
-                    .height(40.dp))
+                    .height(10.dp))
                 BudgetList()
             }
         }
@@ -225,6 +232,17 @@ fun BudgetList() {
     // Observe the userBudgets StateFlow
     val userBudgetState by remember { budgetViewModel.userBudgets }.collectAsState(emptyList())
 
+    val isDeleteSuccessful by remember { budgetViewModel.isDeleteSuccessful }.collectAsState(false)
+
+    // Display Snackbar when isDeleteSuccessful changes to true
+    LaunchedEffect(isDeleteSuccessful) {
+        if (isDeleteSuccessful) {
+            Toast.makeText(context, "Budget deleted", Toast.LENGTH_LONG).show()
+            // Reset the state after showing the Snackbar
+            budgetViewModel.resetDeleteSuccessState()
+        }
+    }
+
 
     LazyColumn(
         modifier = Modifier
@@ -246,7 +264,13 @@ fun BudgetList() {
             items(userBudgetState) { budget ->
                 BudgetListCard(
                     budgetTitle = budget.title,
-                    budgetAmount = budget.amount
+                    budgetAmount = budget.amount,
+                    onDeleteClicked = {
+                        coroutineScope.launch {
+                            budgetViewModel.deleteBudget(budget)
+                        }
+
+                    }
                 )
             }
         }
@@ -256,8 +280,12 @@ fun BudgetList() {
 @Composable
 fun BudgetListCard(
     budgetTitle: String,
-    budgetAmount: Double
+    budgetAmount: Double,
+    onDeleteClicked: () -> Unit
 ) {
+    // State to track whether the delete confirmation dialog is open
+    var isDialogOpen by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -270,13 +298,17 @@ fun BudgetListCard(
             ),
             modifier = Modifier
                 .weight(0.8f)
-                .height(140.dp)
-                .padding(all = 20.dp)
+                .height(100.dp) // Reduced height
+                .padding(
+                    top = 10.dp,
+                    bottom = 10.dp,
+                    start = 20.dp,
+                    end = 20.dp
+                ) // Adjusted padding
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(all = 10.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -297,12 +329,19 @@ fun BudgetListCard(
                 }
             }
         }
-        Icon(
-            imageVector = Icons.Filled.Delete,
-            contentDescription = null,
-            modifier = Modifier
-                .size(60.dp)
-                .padding(top = 20.dp))
+        IconButton(onClick = {
+            onDeleteClicked()
+        }) {
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = null,
+                tint = Color.Black,
+                modifier = Modifier
+                    .size(60.dp)
+                    .padding(top = 20.dp)
+                )
+        }
+
     }
 
 }
