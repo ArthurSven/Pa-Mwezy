@@ -11,7 +11,7 @@ interface BudgetRepository {
 
     suspend fun insertBudget(budgetLocal: BudgetLocal)
 
-    fun getAllBudgetsByUser(createdBy: String) : Flow<BudgetLocal>
+    fun getAllBudgetsByUser(createdBy: String) : Flow<List<BudgetLocal>>
 
     suspend fun deleteBudget(budgetLocal: BudgetLocal)
 }
@@ -21,9 +21,10 @@ class BudgetRepositoryImpl @Inject constructor(private val budgetDao: BudgetDao)
         return budgetDao.insertBudget(budgetLocal)
     }
 
-    override fun getAllBudgetsByUser(createdBy: String): Flow<BudgetLocal> {
+    override fun getAllBudgetsByUser(createdBy: String): Flow<List<BudgetLocal>> {
         return budgetDao.getBudgetsByUser(createdBy)
     }
+
 
     override suspend fun deleteBudget(budgetLocal: BudgetLocal) {
         return budgetDao.deleteBudget(budgetLocal)

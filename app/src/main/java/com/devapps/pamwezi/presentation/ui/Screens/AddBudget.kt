@@ -210,9 +210,9 @@ fun BudgetCard() {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val authViewModel = viewModel<AuthViewModel>()
-    val budgetViewModel: BudgetViewModel = hiltViewModel()
 
-    val state by budgetViewModel.state.collectAsState()
+
+
 
     val googleAuthClient by lazy {
         GoogleAuthClient(
@@ -221,8 +221,11 @@ fun BudgetCard() {
         )
     }
 
-
     val username = googleAuthClient.getSignedInUser()?.username.toString()
+
+    val budgetViewModel: BudgetViewModel = hiltViewModel()
+
+    val state by budgetViewModel.state.collectAsState()
 
     val months = arrayOf<String>(
         "January", "February", "March", "April", "May", "June",

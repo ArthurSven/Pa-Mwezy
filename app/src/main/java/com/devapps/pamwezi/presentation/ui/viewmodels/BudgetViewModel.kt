@@ -21,10 +21,15 @@ import com.devapps.pamwezi.domain.repository.BudgetRepositoryImpl
 import com.devapps.pamwezi.utils.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,9 +40,24 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
     private val _state = MutableStateFlow(InsertBudgetState())
     val state = _state.asStateFlow()
 
+    private val _userBudgets = MutableStateFlow<List<BudgetLocal>>(emptyList())
+    val userBudgets: StateFlow<List<BudgetLocal>> = _userBudgets
 
-val createdBy: String = ""
-    val userBudgets = budgetRepository.getAllBudgetsByUser(createdBy)
+    private val _createdBy = MutableStateFlow<String>("")
+    val createdBy: StateFlow<String> = _createdBy
+
+    fun setCreatedBy(username: String) {
+        _createdBy.value = username
+        getAllBudgetsByUser()
+    }
+
+    private fun getAllBudgetsByUser() {
+        viewModelScope.launch {
+            budgetRepository.getAllBudgetsByUser(_createdBy.value).collect { budgets ->
+                _userBudgets.value = budgets
+            }
+        }
+    }
 
     private fun onInsertBudgetResult(result: InsertBudgetResult) {
         _state.update {
@@ -59,6 +79,8 @@ val createdBy: String = ""
         }
 
     }
+
+
 
     fun resetState() {
         _state.update { InsertBudgetState() }

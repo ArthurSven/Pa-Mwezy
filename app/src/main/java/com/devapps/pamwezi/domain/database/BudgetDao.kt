@@ -14,7 +14,7 @@ interface BudgetDao {
     suspend fun insertBudget(budgetLocal: BudgetLocal)
 
     @Query("SELECT * FROM budget_table WHERE createdBy = :createdBy ORDER BY id DESC")
-    fun getBudgetsByUser(createdBy: String) : Flow<BudgetLocal>
+    fun getBudgetsByUser(createdBy: String) : Flow<List<BudgetLocal>>
 
     @Delete
     suspend fun deleteBudget(budgetLocal: BudgetLocal)

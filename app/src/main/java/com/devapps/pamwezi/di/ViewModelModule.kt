@@ -10,4 +10,5 @@ import dagger.hilt.android.scopes.ViewModelScoped
 @InstallIn(ViewModelComponent::class)
 object ViewModelModule {
 
+
 }
