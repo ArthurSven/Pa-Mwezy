@@ -7,6 +7,8 @@ import com.devapps.pamwezi.PaMwezyApplication
 import com.devapps.pamwezi.domain.database.BudgetDatabase
 import com.devapps.pamwezi.domain.repository.BudgetRepository
 import com.devapps.pamwezi.domain.repository.BudgetRepositoryImpl
+import com.devapps.pamwezi.domain.repository.ExpenseRepository
+import com.devapps.pamwezi.domain.repository.ExpenseRepositoryImpl
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import dagger.Module
@@ -52,5 +54,11 @@ fun provideBudgetDatabase(app: Application): BudgetDatabase {
     @Singleton
     fun provideBudgetRepository(db: BudgetDatabase) : BudgetRepository {
         return BudgetRepositoryImpl(db.budgetDao())
+    }
+
+    @Provides
+    @Singleton
+    fun provideExpenseRepository(db: BudgetDatabase) : ExpenseRepository {
+        return ExpenseRepositoryImpl(db.expenseDao())
     }
 }

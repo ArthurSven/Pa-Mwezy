@@ -1,5 +1,6 @@
 package com.devapps.pamwezi.presentation.ui.Screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
@@ -17,6 +18,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -28,6 +30,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -459,5 +464,99 @@ fun BudgetCard() {
         }
 
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BudgetDetailScreen() {
+    val showMenu = remember { mutableStateOf(false) }
+    Scaffold(
+        containerColor = Color.White,
+        contentColor = Color.White,
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(text = "Pa Mwezy",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 26.sp,
+                        textAlign = TextAlign.Center,
+                        color = Color.Black)
+                },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                    Color.White
+                ),
+                navigationIcon = {
+                    IconButton(onClick = {
+                       // navController.navigate(Home.route)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack ,
+                            contentDescription = "exit screen icon",
+                            tint = Color.Black
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showMenu.value = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = "home menu",
+                            tint = Color.Black)
+                    }
+                    DropdownMenu(
+                        expanded = showMenu.value,
+                        onDismissRequest = { showMenu.value = false },
+                        modifier = Modifier
+                            .background(color = Color.White)
+                            .width(80.dp)
+                    ) {
+                        DropdownMenuItem(text = {
+                            Text(text = "Logout",
+                                color = Color.Black)
+                        }, onClick = {
+                            //navController.navigate(SignOutUser.route)
+                        })
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(color = Color.White)
+            )
+        },
+        floatingActionButtonPosition = FabPosition.End,
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    Log.d("Navigation", "Navigating to ${AddBudget.route}")
+                   // navController.navigate(AddBudget.route)
+                },
+                contentColor = Color.White,
+                containerColor = Color.Black
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Create,
+                    contentDescription = "Add monthly budget",
+                )
+                Text(text = "Add Expense")
+            }
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(it)
+                .background(color = Color.LightGray)
+                .fillMaxSize()
+        ) {
+            Spacer(modifier = Modifier
+                .height(20.dp))
+
+        }
+    }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun ViewTheUI() {
+    BudgetDetailScreen()
 }
 

@@ -7,8 +7,10 @@ import androidx.room.RoomDatabase
 import com.devapps.pamwezi.domain.model.BudgetLocal
 import com.devapps.pamwezi.domain.model.Expense
 
-@Database(entities = [BudgetLocal::class, Expense::class], version = 1, exportSchema = false)
+@Database(entities = [BudgetLocal::class, Expense::class], version = 2, exportSchema = false)
 abstract class BudgetDatabase : RoomDatabase() {
 
     abstract fun budgetDao(): BudgetDao
+
+    abstract fun expenseDao(): ExpenseDao
 }

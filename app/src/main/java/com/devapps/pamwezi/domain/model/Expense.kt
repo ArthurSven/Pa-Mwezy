@@ -22,10 +22,10 @@ data class Expense(
     val expenseId: Int = 0,
     @ColumnInfo("expense_title")
     val expenseTitle: String,
-    @ColumnInfo("quantity")
-    val qty: Int,
     @ColumnInfo("price")
     val price: Double,
+    @ColumnInfo("date")
+    val date: String,
     @ColumnInfo("budget_id")
     val id: Int
 )
