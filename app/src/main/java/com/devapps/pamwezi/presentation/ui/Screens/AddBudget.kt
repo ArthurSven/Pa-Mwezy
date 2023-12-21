@@ -3,15 +3,19 @@ package com.devapps.pamwezi.presentation.ui.Screens
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -35,6 +40,7 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -49,6 +55,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -68,6 +75,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.devapps.pamwezi.domain.model.BudgetLocal
 import com.devapps.pamwezi.domain.model.UserData
@@ -77,7 +85,9 @@ import com.devapps.pamwezi.presentation.ui.viewmodels.AuthViewModel
 import com.devapps.pamwezi.presentation.ui.viewmodels.BudgetViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -468,8 +478,39 @@ fun BudgetCard() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BudgetDetailScreen() {
+fun BudgetDetailScreen(
+    budgetId: Int?,
+    userData: UserData?,
+    onSignOut: () -> Unit,
+    navController: NavController) {
     val showMenu = remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val googleAuthClient by lazy {
+        GoogleAuthClient(
+            context = context,
+            oneTapClient = Identity.getSignInClient(context)
+        )
+    }
+
+    val budgetViewModel: BudgetViewModel = hiltViewModel()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val arguments = navBackStackEntry?.arguments
+    // Apply LaunchedEffect for asynchronous database access
+
+    val selectedBudget = remember { mutableStateOf<BudgetLocal?>(null) }
+
+    LaunchedEffect(budgetId) {
+        if (budgetId != null) {
+            val budget = budgetViewModel.getBudgetByBudgetId(budgetId)
+
+            // Update the selectedBudget value
+            selectedBudget.value = budget
+        }
+    }
+
+
     Scaffold(
         containerColor = Color.White,
         contentColor = Color.White,
@@ -487,7 +528,7 @@ fun BudgetDetailScreen() {
                 ),
                 navigationIcon = {
                     IconButton(onClick = {
-                       // navController.navigate(Home.route)
+                        navController.navigate(Home.route)
                     }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack ,
@@ -514,7 +555,7 @@ fun BudgetDetailScreen() {
                             Text(text = "Logout",
                                 color = Color.Black)
                         }, onClick = {
-                            //navController.navigate(SignOutUser.route)
+                            navController.navigate(SignOutUser.route)
                         })
                     }
                 },
@@ -527,8 +568,7 @@ fun BudgetDetailScreen() {
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-                    Log.d("Navigation", "Navigating to ${AddBudget.route}")
-                   // navController.navigate(AddBudget.route)
+                    onSignOut()
                 },
                 contentColor = Color.White,
                 containerColor = Color.Black
@@ -549,14 +589,144 @@ fun BudgetDetailScreen() {
         ) {
             Spacer(modifier = Modifier
                 .height(20.dp))
+            UserBar(userData)
+            Spacer(modifier = Modifier
+                .height(20.dp))
+            // State to track whether the delete confirmation dialog is open
+            var isDialogOpen by remember { mutableStateOf(false) }
 
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                ElevatedCard(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = Color.Black,
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier
+                        .weight(0.8f)
+                        .height(150.dp) // Reduced height
+                        .padding(
+                            top = 10.dp,
+                            bottom = 10.dp,
+                            start = 20.dp,
+                            end = 20.dp
+                        ),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 10.dp, start = 20.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            if (selectedBudget != null) {
+                                Text(
+                                    text = "${selectedBudget.value?.title}",
+                                    color = Color.White, fontSize = 20.sp
+                                )
+                                Text(
+                                    text = "MWK: ${selectedBudget.value?.amount}",
+                                    color = Color.White, fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            } else {
+                                Text(
+                                    text = "Budget not available",
+                                    color = Color.White, fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier
+                .height(20.dp))
+            Text(text = "Recent Expenses",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier
+                    .padding(start = 20.dp))
+            ExpenseCard()
+            ExpenseCard()
         }
     }
 }
 
 @Composable
+fun ExpenseCard() {
+        // State to track whether the delete confirmation dialog is open
+        var isDialogOpen by remember { mutableStateOf(false) }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            ElevatedCard(
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = Color.White,
+                    contentColor = Color.White
+                ),
+                modifier = Modifier
+                    .weight(0.8f)
+                    .height(100.dp) // Reduced height
+                    .padding(
+                        top = 10.dp,
+                        bottom = 10.dp,
+                        start = 20.dp,
+                        end = 20.dp
+                    ) // Adjusted padding,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(0.60f)
+                            .padding(top = 10.dp, start = 20.dp),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Apple",
+                            color = Color.Black, fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "14/12/2023",
+                            color = Color.Black, fontSize = 16.sp,
+                        )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(0.40f)
+                            .padding(top = 30.dp, end = 10.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        Text(
+                            text = "MWK: 6000",
+                            color = Color.Black, fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+@Composable
 @Preview(showBackground = true)
 fun ViewTheUI() {
-    BudgetDetailScreen()
+
 }
 

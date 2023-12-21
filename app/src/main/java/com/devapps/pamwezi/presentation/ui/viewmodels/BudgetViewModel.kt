@@ -20,6 +20,8 @@ import com.devapps.pamwezi.domain.repository.BudgetRepository
 import com.devapps.pamwezi.domain.repository.BudgetRepositoryImpl
 import com.devapps.pamwezi.utils.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +34,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -42,6 +45,22 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
 
     private val _userBudgets = MutableStateFlow<List<BudgetLocal>>(emptyList())
     val userBudgets: StateFlow<List<BudgetLocal>> = _userBudgets
+
+    private val _selectedBudget = MutableStateFlow<BudgetLocal?>(null)
+    val selectedBudget: StateFlow<BudgetLocal?> = _selectedBudget
+
+    private val _selectBudgetId = MutableStateFlow<Int?>(null)
+    val selectBudgetId: StateFlow<Int?> = _selectBudgetId
+
+    private val _selectBudgetByTitleAndName = MutableStateFlow<BudgetLocal?>(null)
+    val selectBudgetByTitleAndName: StateFlow<BudgetLocal?> = _selectBudgetByTitleAndName
+
+
+
+    // Function to update the selected budget
+    fun updateSelectedBudget(budget: BudgetLocal) {
+        _selectedBudget.value = budget
+    }
 
     private val _createdBy = MutableStateFlow<String>("")
     val createdBy: StateFlow<String> = _createdBy
@@ -55,12 +74,23 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
         getAllBudgetsByUser()
     }
 
+    fun setBudgetId(budgetId: Int) {
+        _selectBudgetId.value = budgetId
+        getBudgetByBudgetId(budgetId)
+    }
+
+
+
     private fun getAllBudgetsByUser() {
         viewModelScope.launch {
             budgetRepository.getAllBudgetsByUser(_createdBy.value).collect { budgets ->
                 _userBudgets.value = budgets
             }
         }
+    }
+
+    fun getBudgetByBudgetId(budgetId: Int?) : BudgetLocal? {
+        return budgetRepository.getBudgetById(budgetId)
     }
 
     suspend fun deleteBudget(budgetLocal: BudgetLocal) {

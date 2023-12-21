@@ -4,10 +4,12 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room.databaseBuilder
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.devapps.pamwezi.domain.model.BudgetLocal
 import com.devapps.pamwezi.domain.model.Expense
 
-@Database(entities = [BudgetLocal::class, Expense::class], version = 2, exportSchema = false)
+@Database(entities = [BudgetLocal::class, Expense::class], version = 1, exportSchema = false)
 abstract class BudgetDatabase : RoomDatabase() {
 
     abstract fun budgetDao(): BudgetDao

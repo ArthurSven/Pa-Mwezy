@@ -61,15 +61,19 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.devapps.pamwezi.domain.model.UserData
 import com.devapps.pamwezi.domain.repository.GoogleAuthClient
 import com.devapps.pamwezi.presentation.ui.Components.UserBar
 import com.devapps.pamwezi.presentation.ui.viewmodels.AuthViewModel
 import com.devapps.pamwezi.presentation.ui.viewmodels.BudgetViewModel
 import com.google.android.gms.auth.api.identity.Identity
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -117,6 +121,20 @@ fun HomeScreen(
             LaunchedEffect(Unit) {
                 onSignOut()
             }
+        }
+        composable(route = "budgetDetail/{budgetId}") { backStackEntry ->
+            val arguments = requireNotNull(backStackEntry.arguments)
+            val budgetId = arguments.getInt("budgetId")
+            BudgetDetailScreen(
+                budgetId = budgetId,
+                userData = googleAuthClient.getSignedInUser(),
+                onSignOut = {
+                    coroutineScope.launch {
+                        googleAuthClient.signOut()
+                    }
+                },
+                clientNavController
+            )
         }
     }
 }
@@ -202,14 +220,14 @@ fun HomeContent(
                 UserBar(userData)
                 Spacer(modifier = Modifier
                     .height(10.dp))
-                BudgetList()
+                BudgetList(navController)
             }
         }
     }
 }
 
 @Composable
-fun BudgetList() {
+fun BudgetList(navController: NavController) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -238,7 +256,7 @@ fun BudgetList() {
     LaunchedEffect(isDeleteSuccessful) {
         if (isDeleteSuccessful) {
             Toast.makeText(context, "Budget deleted", Toast.LENGTH_LONG).show()
-            // Reset the state after showing the Snackbar
+
             budgetViewModel.resetDeleteSuccessState()
         }
     }
@@ -263,14 +281,15 @@ fun BudgetList() {
         } else {
             items(userBudgetState) { budget ->
                 BudgetListCard(
+                    budgetId = budget.id,
                     budgetTitle = budget.title,
                     budgetAmount = budget.amount,
                     onDeleteClicked = {
                         coroutineScope.launch {
                             budgetViewModel.deleteBudget(budget)
                         }
-
-                    }
+                    },
+                   navController = navController
                 )
             }
         }
@@ -279,10 +298,14 @@ fun BudgetList() {
 
 @Composable
 fun BudgetListCard(
+    budgetId: Int,
     budgetTitle: String,
     budgetAmount: Double,
-    onDeleteClicked: () -> Unit
+    onDeleteClicked: () -> Unit,
+    navController: NavController
 ) {
+
+    val budgetViewModel: BudgetViewModel = hiltViewModel()
     // State to track whether the delete confirmation dialog is open
     var isDialogOpen by remember { mutableStateOf(false) }
 
@@ -290,6 +313,7 @@ fun BudgetListCard(
         modifier = Modifier
             .fillMaxWidth()
     ) {
+        val context = LocalContext.current.applicationContext
         ElevatedCard(
             shape = RoundedCornerShape(10.dp),
             colors = CardDefaults.elevatedCardColors(
@@ -305,6 +329,19 @@ fun BudgetListCard(
                     start = 20.dp,
                     end = 20.dp
                 ) // Adjusted padding
+                .clickable {
+                    try {
+                        budgetViewModel.setBudgetId(budgetId)
+                        navController.navigate("budgetDetail/${budgetId}")
+
+                        //budgetViewModel.setSelectedBudgetId(budgetId)
+                        //navController.navigate("budgetDetail/$budgetId")
+                    } catch (e: Exception) {
+                        Toast.makeText(context, e.message,Toast.LENGTH_LONG).show()
+                    }
+
+//
+                }
         ) {
             Row(
                 modifier = Modifier
