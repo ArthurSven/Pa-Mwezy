@@ -72,9 +72,11 @@ import com.devapps.pamwezi.presentation.ui.Components.UserBar
 import com.devapps.pamwezi.presentation.ui.viewmodels.AuthViewModel
 import com.devapps.pamwezi.presentation.ui.viewmodels.BudgetViewModel
 import com.google.android.gms.auth.api.identity.Identity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,7 +124,9 @@ fun HomeScreen(
                 onSignOut()
             }
         }
-        composable(route = "budgetDetail/{budgetId}") { backStackEntry ->
+        composable(route = "budgetDetail/{budgetId}",
+            arguments = listOf(navArgument("budgetId") {type = NavType.IntType})
+        ) { backStackEntry ->
             val arguments = requireNotNull(backStackEntry.arguments)
             val budgetId = arguments.getInt("budgetId")
             BudgetDetailScreen(
@@ -135,6 +139,13 @@ fun HomeScreen(
                 },
                 clientNavController
             )
+        }
+
+        composable(route = "addExpence/{budgetId}",
+            arguments = listOf(navArgument("budgetId") {type = NavType.IntType})
+        ){backStackEntry ->
+            val arguments = requireNotNull(backStackEntry.arguments)
+            val budgetId = arguments.getInt("budgetId")
         }
     }
 }
@@ -308,6 +319,7 @@ fun BudgetListCard(
     val budgetViewModel: BudgetViewModel = hiltViewModel()
     // State to track whether the delete confirmation dialog is open
     var isDialogOpen by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     Row(
         modifier = Modifier
@@ -331,9 +343,16 @@ fun BudgetListCard(
                 ) // Adjusted padding
                 .clickable {
                     try {
-                        budgetViewModel.setBudgetId(budgetId)
-                        navController.navigate("budgetDetail/${budgetId}")
+                       coroutineScope.launch {
+                           withContext(Dispatchers.IO) {
+                               budgetViewModel.setBudgetId(budgetId)
+                           }
 
+                           withContext(Dispatchers.Main) {
+                               navController.navigate("budgetDetail/${budgetId.toString()}")
+                           }
+
+                       }
                         //budgetViewModel.setSelectedBudgetId(budgetId)
                         //navController.navigate("budgetDetail/$budgetId")
                     } catch (e: Exception) {

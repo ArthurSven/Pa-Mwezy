@@ -15,7 +15,7 @@ interface BudgetRepository {
 
     suspend fun deleteBudget(budgetLocal: BudgetLocal)
 
-    fun getBudgetById(id: Int?): BudgetLocal?
+    suspend fun getBudgetById(id: Int?): BudgetLocal?
 
    fun getBudgetByNameAndTitle(createdBy: String, budgetTitle: String) : BudgetLocal
 }
@@ -34,7 +34,7 @@ class BudgetRepositoryImpl @Inject constructor(private val budgetDao: BudgetDao)
         return budgetDao.deleteBudget(budgetLocal)
     }
 
-    override fun getBudgetById(id: Int?): BudgetLocal = budgetDao.getBudgetById(id)
+    override suspend fun getBudgetById(id: Int?): BudgetLocal = budgetDao.getBudgetById(id)
 
 
 

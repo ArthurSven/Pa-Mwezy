@@ -36,7 +36,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+sealed class BudgetItemEvent {
+    data class NavigateToDetailScreen(val budgetId: Int) : BudgetItemEvent()
+    data class ShowDeleteMessage(val budgetLocal: BudgetLocal) : BudgetItemEvent()
 
+}
 @HiltViewModel
 class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRepository)  : ViewModel()  {
 
@@ -54,6 +58,9 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
 
     private val _selectBudgetByTitleAndName = MutableStateFlow<BudgetLocal?>(null)
     val selectBudgetByTitleAndName: StateFlow<BudgetLocal?> = _selectBudgetByTitleAndName
+
+    private val _budgetEventChannel = Channel<BudgetItemEvent>()
+    val budgetEventFlow: Flow<BudgetItemEvent> get() = _budgetEventChannel.receiveAsFlow()
 
 
 
@@ -75,8 +82,12 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
     }
 
     fun setBudgetId(budgetId: Int) {
-        _selectBudgetId.value = budgetId
-        getBudgetByBudgetId(budgetId)
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                _selectBudgetId.value = budgetId
+                getBudgetByBudgetId(budgetId)
+            }
+        }
     }
 
 
@@ -89,8 +100,13 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
         }
     }
 
-    fun getBudgetByBudgetId(budgetId: Int?) : BudgetLocal? {
+    suspend fun getBudgetByBudgetId(budgetId: Int?) : BudgetLocal? {
         return budgetRepository.getBudgetById(budgetId)
+    }
+
+    fun onBudgetItemClick(budgetId: Int) {
+        _selectBudgetId.value = budgetId
+
     }
 
     suspend fun deleteBudget(budgetLocal: BudgetLocal) {
@@ -124,7 +140,11 @@ class BudgetViewModel @Inject constructor(private val budgetRepository: BudgetRe
 
     }
 
-
+    private fun sendEvent(event: BudgetItemEvent) {
+        viewModelScope.launch {
+            _budgetEventChannel.send(event)
+        }
+    }
 
     fun resetState() {
         _state.update { InsertBudgetState() }

@@ -501,12 +501,20 @@ fun BudgetDetailScreen(
 
     val selectedBudget = remember { mutableStateOf<BudgetLocal?>(null) }
 
+
     LaunchedEffect(budgetId) {
         if (budgetId != null) {
-            val budget = budgetViewModel.getBudgetByBudgetId(budgetId)
+            try {
+                val budgetIdString = budgetId.toString()
 
-            // Update the selectedBudget value
-            selectedBudget.value = budget
+                val budget = budgetViewModel.getBudgetByBudgetId(budgetIdString.toInt())
+                Log.d("BudgetDetailScreen", "Retrieved Budget: $budget")
+                // Update the selectedBudget value
+                selectedBudget.value = budget
+            } catch(e: NumberFormatException) {
+                Log.e("BudgetDetailScreen", "Invalid budgetId format: $budgetId")
+            }
+
         }
     }
 
@@ -568,7 +576,7 @@ fun BudgetDetailScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-                    onSignOut()
+
                 },
                 contentColor = Color.White,
                 containerColor = Color.Black
@@ -626,7 +634,7 @@ fun BudgetDetailScreen(
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            if (selectedBudget != null) {
+                            if (selectedBudget.value != null) {
                                 Text(
                                     text = "${selectedBudget.value?.title}",
                                     color = Color.White, fontSize = 20.sp
