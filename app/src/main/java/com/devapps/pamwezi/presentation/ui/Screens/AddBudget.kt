@@ -81,8 +81,10 @@ import com.devapps.pamwezi.domain.model.BudgetLocal
 import com.devapps.pamwezi.domain.model.UserData
 import com.devapps.pamwezi.domain.repository.GoogleAuthClient
 import com.devapps.pamwezi.presentation.ui.Components.UserBar
+import com.devapps.pamwezi.presentation.ui.Components.getCurrentDate
 import com.devapps.pamwezi.presentation.ui.viewmodels.AuthViewModel
 import com.devapps.pamwezi.presentation.ui.viewmodels.BudgetViewModel
+import com.devapps.pamwezi.presentation.ui.viewmodels.ExpenseViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -732,9 +734,293 @@ fun ExpenseCard() {
         }
     }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddExpenseScreen(
+    userData: UserData,
+    onSignOut: () -> Unit,
+    navController: NavController
+) {
+    val showMenu = remember { mutableStateOf(false) }
+    Scaffold(
+        containerColor = Color.White,
+        contentColor = Color.White,
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(text = "Pa Mwezy",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 26.sp,
+                        textAlign = TextAlign.Center,
+                        color = Color.Black)
+                },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                    Color.White
+                ),
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.navigate(Home.route)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack ,
+                            contentDescription = "exit screen icon",
+                            tint = Color.Black
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showMenu.value = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = "home menu",
+                            tint = Color.Black)
+                    }
+                    DropdownMenu(
+                        expanded = showMenu.value,
+                        onDismissRequest = { showMenu.value = false },
+                        modifier = Modifier
+                            .background(color = Color.White)
+                            .width(80.dp)
+                    ) {
+                        DropdownMenuItem(text = {
+                            Text(text = "Logout",
+                                color = Color.Black)
+                        }, onClick = {
+                            navController.navigate(SignOutUser.route)
+                        })
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(color = Color.White)
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(it)
+                .background(color = Color.LightGray)
+                .fillMaxSize()
+        ) {
+            Spacer(modifier = Modifier
+                .height(20.dp))
+            UserBar(userData)
+            Spacer(modifier = Modifier
+                .height(40.dp))
+            BudgetCard()
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddExpenseCard() {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val authViewModel = viewModel<AuthViewModel>()
+
+    val googleAuthClient by lazy {
+        GoogleAuthClient(
+            context = context,
+            oneTapClient = Identity.getSignInClient(context)
+        )
+    }
+
+    val username = googleAuthClient.getSignedInUser()?.username.toString()
+
+    val budgetViewModel: BudgetViewModel = hiltViewModel()
+    val expenseViewModel: ExpenseViewModel = hiltViewModel()
+
+    val state by budgetViewModel.state.collectAsState()
+    var date = getCurrentDate()
+
+
+    var expenseTitle by remember {
+        mutableStateOf("")
+    }
+
+    var expensePrice by remember {
+        mutableStateOf(0.0)
+    }
+
+    var expenseDate by remember {
+        mutableStateOf(date)
+    }
+
+
+    ElevatedCard(
+        shape = RoundedCornerShape(10.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp
+        ),
+        modifier = Modifier
+            .padding(all = 20.dp)
+            .background(color = Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = Color.White)
+        ) {
+            Spacer(
+                modifier = Modifier
+                    .height(60.dp)
+            )
+            Text(
+                text = "Add Expense",
+                color = Color.Black,
+                fontSize = 24.sp,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .padding(start = 20.dp, end = 20.dp)
+                    .fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+            Spacer(
+                modifier = Modifier
+                    .height(30.dp)
+            )
+            OutlinedTextField(
+                value = expenseTitle,
+                onValueChange = {
+                   expenseTitle = it
+                },
+                placeholder = {
+                    Text(
+                        text = "Expense title",
+                        color = Color.Black
+                    )
+                },
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier
+                    .padding(start = 20.dp, end = 20.dp)
+                    .border(width = 2.dp, color = Color.LightGray)
+                    .background(color = Color.LightGray),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    textColor = Color.Black,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedBorderColor = Color.Black
+                )
+            )
+            Spacer(
+                modifier = Modifier
+                    .height(15.dp)
+            )
+            OutlinedTextField(
+                value = expensePrice.toString(),
+                onValueChange = {
+                    expensePrice = it.toDoubleOrNull() ?: 0.0
+                },
+                placeholder = {
+                    Text(
+                        text = "Budget amount",
+                        color = Color.Black
+                    )
+                },
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier
+                    .padding(start = 20.dp, end = 20.dp)
+                    .border(width = 2.dp, color = Color.LightGray)
+                    .background(color = Color.LightGray),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    textColor = Color.Black,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedBorderColor = Color.Black
+                )
+            )
+            Spacer(
+                modifier = Modifier
+                    .height(15.dp)
+            )
+            OutlinedTextField(
+                value = date,
+                onValueChange = {
+                    date = it
+                },
+                placeholder = {
+                    Text(text = date,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                modifier = Modifier
+                    .width(310.dp),
+                readOnly = true
+            )
+            Spacer(
+                modifier = Modifier
+                    .height(20.dp)
+            )
+            Button(
+
+
+                onClick = {
+                    if (expenseTitle.isNotEmpty() && expensePrice.toString().isNotEmpty()) {
+
+//
+//                        coroutineScope.launch {
+//                            budgetViewModel.insertBudget(budgetLocal)
+//                        }
+//                        budgetTitle = ""
+//                        monthlyBudget = 0.0
+//                        selectedMonth =  mutableStateOf(months[0])
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Ensure that the title is not empty",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+
+                    // Call insertBudget in the ViewModel
+                    coroutineScope.launch {
+
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Black,
+                    contentColor = Color.White
+                ),
+                modifier = Modifier
+                    .padding(start = 20.dp, end = 20.dp)
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .background(color = Color.White),
+                shape = RoundedCornerShape(5.dp)
+            ) {
+                Text(text = "Create Budget")
+            }
+            Spacer(
+                modifier = Modifier
+                    .height(30.dp)
+            )
+            LaunchedEffect(key1 = state.isInsertedBudgetSuccessful) {
+                if (state.isInsertedBudgetSuccessful) {
+                    Toast.makeText(
+                        context,
+                        "Budget successfully added",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    budgetViewModel.resetState()
+                }
+            }
+        }
+
+    }
+}
+
+
 @Composable
 @Preview(showBackground = true)
 fun ViewTheUI() {
-
+AddExpenseCard()
 }
 
