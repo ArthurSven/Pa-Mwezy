@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -78,6 +80,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.devapps.pamwezi.domain.model.BudgetLocal
+import com.devapps.pamwezi.domain.model.Expense
 import com.devapps.pamwezi.domain.model.UserData
 import com.devapps.pamwezi.domain.repository.GoogleAuthClient
 import com.devapps.pamwezi.presentation.ui.Components.UserBar
@@ -144,7 +147,7 @@ fun AddBudget(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddBudgetScreen(
-    userData: UserData,
+    userData: UserData?,
     onSignOut: () -> Unit,
     navController: NavController
 ) {
@@ -578,7 +581,7 @@ fun BudgetDetailScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-
+                    navController.navigate("addExpense/${budgetId.toString()}")
                 },
                 contentColor = Color.White,
                 containerColor = Color.Black
@@ -664,19 +667,107 @@ fun BudgetDetailScreen(
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
                 modifier = Modifier
-                    .padding(start = 20.dp))
-            ExpenseCard()
-            ExpenseCard()
+                    .padding(start = 20.dp)
+            )
+            Spacer(modifier = Modifier
+                .height(10.dp))
+            ExpenseList(budgetId)
         }
     }
 }
 
 @Composable
-fun ExpenseCard() {
+fun ExpenseList(budgetId: Int?) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val googleAuthClient by lazy {
+        GoogleAuthClient(
+            context = context,
+            oneTapClient = Identity.getSignInClient(context)
+        )
+    }
+
+
+    val budgetViewModel: BudgetViewModel = hiltViewModel()
+    val expenseViewModel: ExpenseViewModel = hiltViewModel()
+
+
+    // Set the createdBy value in the ViewModel
+    LaunchedEffect(budgetId) {
+        expenseViewModel.setBudgetId(budgetId)
+    }
+
+
+
+    // Observe the userBudgets StateFlow
+    val userExpenseState by remember { expenseViewModel.userExpenses}.collectAsState(emptyList())
+
+    val expensesForBudget = userExpenseState.filter { it.id == budgetId }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 10.dp)
+    ) {
+        if (userExpenseState.isEmpty()) {
+            item {
+                Text(
+                    text = "No expenses Added",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    textAlign = TextAlign.Center,
+                    color = Color.DarkGray
+                )
+            }
+        } else {
+            items(userExpenseState) { expense ->
+                ExpenseCard(
+                    expenseId = expense.expenseId,
+                    budgetId = expense.id,
+                    expenseTitle = expense.expenseTitle,
+                    expensePrice = expense.price,
+                    expenseDate = expense.date
+                )
+            }
+        }
+    }
+}
+@Composable
+fun ExpenseCard(
+    expenseId: Int,
+    budgetId: Int,
+    expenseTitle: String,
+    expensePrice: Double,
+    expenseDate: String
+) {
         // State to track whether the delete confirmation dialog is open
         var isDialogOpen by remember { mutableStateOf(false) }
 
-        Row(
+    val selectedExpenses = remember { mutableStateOf<Expense?>(null) }
+
+    val expenseViewModel: ExpenseViewModel = hiltViewModel()
+
+
+    LaunchedEffect(budgetId) {
+        if (budgetId != null) {
+            try {
+                val budgetIdString = budgetId.toString()
+
+                val budget = expenseViewModel.getAllExpenseByBudgetId()
+                Log.d("BudgetDetailScreen", "Retrieved Budget: $budget")
+                // Update the selectedBudget value
+                selectedExpenses
+            } catch(e: NumberFormatException) {
+                Log.e("BudgetDetailScreen", "Invalid budgetId format: $budgetId")
+            }
+
+        }
+    }
+
+
+    Row(
             modifier = Modifier
                 .fillMaxWidth()
         ) {
@@ -707,12 +798,12 @@ fun ExpenseCard() {
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Apple",
+                            text = expenseTitle,
                             color = Color.Black, fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "14/12/2023",
+                            text = expenseDate,
                             color = Color.Black, fontSize = 16.sp,
                         )
                     }
@@ -724,7 +815,7 @@ fun ExpenseCard() {
                         horizontalAlignment = Alignment.End
                     ) {
                         Text(
-                            text = "MWK: 6000",
+                            text = "MWK: $expensePrice",
                             color = Color.Black, fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -737,7 +828,8 @@ fun ExpenseCard() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(
-    userData: UserData,
+    userData: UserData?,
+    budgetId: Int,
     onSignOut: () -> Unit,
     navController: NavController
 ) {
@@ -807,14 +899,16 @@ fun AddExpenseScreen(
             UserBar(userData)
             Spacer(modifier = Modifier
                 .height(40.dp))
-            BudgetCard()
+            AddExpenseCard(budgetId)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseCard() {
+fun AddExpenseCard(
+    budgetId: Int
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val authViewModel = viewModel<AuthViewModel>()
@@ -831,7 +925,7 @@ fun AddExpenseCard() {
     val budgetViewModel: BudgetViewModel = hiltViewModel()
     val expenseViewModel: ExpenseViewModel = hiltViewModel()
 
-    val state by budgetViewModel.state.collectAsState()
+    val state by expenseViewModel.expenseState.collectAsState()
     var date = getCurrentDate()
 
 
@@ -917,7 +1011,7 @@ fun AddExpenseCard() {
                 },
                 placeholder = {
                     Text(
-                        text = "Budget amount",
+                        text = "Price",
                         color = Color.Black
                     )
                 },
@@ -964,13 +1058,16 @@ fun AddExpenseCard() {
                 onClick = {
                     if (expenseTitle.isNotEmpty() && expensePrice.toString().isNotEmpty()) {
 
-//
-//                        coroutineScope.launch {
-//                            budgetViewModel.insertBudget(budgetLocal)
-//                        }
-//                        budgetTitle = ""
-//                        monthlyBudget = 0.0
-//                        selectedMonth =  mutableStateOf(months[0])
+                        val expense = Expense(
+                            expenseTitle = expenseTitle,
+                            price = expensePrice,
+                            date = date,
+                            id = budgetId
+                        )
+
+                        coroutineScope.launch {
+                            expenseViewModel.insertExpense(expense)
+                        }
                     } else {
                         Toast.makeText(
                             context,
@@ -996,17 +1093,17 @@ fun AddExpenseCard() {
                     .background(color = Color.White),
                 shape = RoundedCornerShape(5.dp)
             ) {
-                Text(text = "Create Budget")
+                Text(text = "Add Expense")
             }
             Spacer(
                 modifier = Modifier
                     .height(30.dp)
             )
-            LaunchedEffect(key1 = state.isInsertedBudgetSuccessful) {
-                if (state.isInsertedBudgetSuccessful) {
+            LaunchedEffect(key1 = state.isInsertExpenseSuccessful) {
+                if (state.isInsertExpenseSuccessful) {
                     Toast.makeText(
                         context,
-                        "Budget successfully added",
+                        "Expense successfully added",
                         Toast.LENGTH_LONG
                     ).show()
                     budgetViewModel.resetState()
@@ -1021,6 +1118,6 @@ fun AddExpenseCard() {
 @Composable
 @Preview(showBackground = true)
 fun ViewTheUI() {
-AddExpenseCard()
+
 }
 

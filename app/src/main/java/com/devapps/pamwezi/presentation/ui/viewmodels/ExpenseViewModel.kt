@@ -3,10 +3,12 @@ package com.devapps.pamwezi.presentation.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devapps.pamwezi.data.InsertBudgetResult
+import com.devapps.pamwezi.data.InsertBudgetState
 import com.devapps.pamwezi.data.InsertExpenseResult
 import com.devapps.pamwezi.data.InsertExpenseState
 import com.devapps.pamwezi.domain.model.BudgetLocal
 import com.devapps.pamwezi.domain.model.Expense
+import com.devapps.pamwezi.domain.repository.BudgetRepository
 import com.devapps.pamwezi.domain.repository.ExpenseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +19,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ExpenseViewModel @Inject constructor(private val expenseRepository: ExpenseRepository) :
+class ExpenseViewModel @Inject constructor(
+    private val expenseRepository: ExpenseRepository,
+    private val budgetRepository: BudgetRepository) :
     ViewModel() {
 
         private val _expenseState = MutableStateFlow(InsertExpenseState())
@@ -33,8 +37,11 @@ class ExpenseViewModel @Inject constructor(private val expenseRepository: Expens
     private val _isDeleteSuccessful = MutableStateFlow(false)
     val isDeleteSuccessful: StateFlow<Boolean> = _isDeleteSuccessful.asStateFlow()
 
-    fun setCreatedBy(id: Int) {
-        _budgetId.value = id
+    suspend fun setBudgetId(id: Int?) {
+        if (id != null) {
+            _budgetId.value = id
+        }
+        getAllExpenseByBudgetId()
     }
 
     private fun onInsertExpenseResult(result: InsertExpenseResult) {
@@ -46,22 +53,19 @@ class ExpenseViewModel @Inject constructor(private val expenseRepository: Expens
         }
     }
 
-    suspend fun insertBudget(expense: Expense) {
-        try {
-            val result = InsertExpenseResult(data = expense, errorMessage = null)
+    suspend fun insertExpense(expense: Expense) {
+        val result = try {
             expenseRepository.insertExpense(expense)
-            onInsertExpenseResult(result)
+            InsertExpenseResult(data = expense, errorMessage = null)
         } catch (e: Exception) {
-            val result = InsertExpenseResult(data = expense, errorMessage = e.message)
-            onInsertExpenseResult(result)
+            InsertExpenseResult(data = expense, errorMessage = e.message)
         }
-
+        onInsertExpenseResult(result)
     }
 
-    private fun getAllExpensesByBudgetID() {
+    suspend fun getAllExpenseByBudgetId() {
         viewModelScope.launch {
-            expenseRepository.getAllExpensesByBudgetID(_budgetId.value).collect{
-                expenses ->
+            expenseRepository.getAllExpensesByBudgetID(_budgetId.value).collect { expenses ->
                 _userExpenses.value = expenses
             }
         }
@@ -75,6 +79,10 @@ class ExpenseViewModel @Inject constructor(private val expenseRepository: Expens
             _isDeleteSuccessful.value = false // Set to false on deletion failure
             // Handle the exception if needed
         }
+    }
+
+    fun resetState() {
+        _expenseState.update { InsertExpenseState() }
     }
 
 

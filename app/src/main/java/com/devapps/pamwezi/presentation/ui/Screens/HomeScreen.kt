@@ -106,8 +106,6 @@ fun HomeScreen(
                         }
                     },
                     clientNavController)
-
-
         }
         composable(AddBudget.route) {
                 AddBudget(
@@ -117,7 +115,6 @@ fun HomeScreen(
                             googleAuthClient.signOut()
                         }
                     })
-
         }
         composable(SignOutUser.route) {
             LaunchedEffect(Unit) {
@@ -141,11 +138,21 @@ fun HomeScreen(
             )
         }
 
-        composable(route = "addExpence/{budgetId}",
+        composable(route = "addExpense/{budgetId}",
             arguments = listOf(navArgument("budgetId") {type = NavType.IntType})
-        ){backStackEntry ->
-            val arguments = requireNotNull(backStackEntry.arguments)
+        ){backStack ->
+            val arguments = requireNotNull(backStack.arguments)
             val budgetId = arguments.getInt("budgetId")
+            AddExpenseScreen(
+                userData = googleAuthClient.getSignedInUser(),
+                budgetId = budgetId,
+                onSignOut = {
+                            coroutineScope.launch {
+                                googleAuthClient.signOut()
+                            }
+                },
+               clientNavController
+            )
         }
     }
 }
@@ -343,20 +350,22 @@ fun BudgetListCard(
                 ) // Adjusted padding
                 .clickable {
                     try {
-                       coroutineScope.launch {
-                           withContext(Dispatchers.IO) {
-                               budgetViewModel.setBudgetId(budgetId)
-                           }
+                        coroutineScope.launch {
+                            withContext(Dispatchers.IO) {
+                                budgetViewModel.setBudgetId(budgetId)
+                            }
 
-                           withContext(Dispatchers.Main) {
-                               navController.navigate("budgetDetail/${budgetId.toString()}")
-                           }
+                            withContext(Dispatchers.Main) {
+                                navController.navigate("budgetDetail/${budgetId.toString()}")
+                            }
 
-                       }
+                        }
                         //budgetViewModel.setSelectedBudgetId(budgetId)
                         //navController.navigate("budgetDetail/$budgetId")
                     } catch (e: Exception) {
-                        Toast.makeText(context, e.message,Toast.LENGTH_LONG).show()
+                        Toast
+                            .makeText(context, e.message, Toast.LENGTH_LONG)
+                            .show()
                     }
 
 //

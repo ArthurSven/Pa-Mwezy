@@ -11,7 +11,7 @@ interface ExpenseRepository {
 
     suspend fun deleteExpense(expense: Expense)
 
-    fun getAllExpensesByBudgetID(budgetId: Int) : Flow<List<Expense>>
+    suspend fun getAllExpensesByBudgetID(budgetId: Int) : Flow<List<Expense>>
 
     fun updateExpense(expense: Expense)
 }
@@ -22,7 +22,7 @@ class ExpenseRepositoryImpl @Inject constructor(private val expenseDao : Expense
 
     override suspend fun deleteExpense(expense: Expense) = expenseDao.deleteExpense(expense)
 
-    override fun getAllExpensesByBudgetID(budgetId: Int): Flow<List<Expense>> =
+    override suspend fun getAllExpensesByBudgetID(budgetId: Int): Flow<List<Expense>> =
         expenseDao.getAllExpensesByBudgetID(budgetId)
 
     override fun updateExpense(expense: Expense) = expenseDao.updateExpense(expense)
